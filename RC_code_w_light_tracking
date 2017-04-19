@@ -1,0 +1,255 @@
+/*
+  Testing RC Connection
+  2/22/17 by Brian Patton
+  Captures the Pulse signal from a RC controller
+  Feel free to do whatever you want with this code example
+*/
+#include <Servo.h>
+
+// Create Variables to hold the Receiver signals
+int Ch1, Ch2, Ch3, Ch4, Ch5, Ch6;
+int CalcHold;        //Variable to temp hold calculations for steering stick corections
+int Rwheel;
+int Lwheel;
+int Arm;
+int ambi = 600; //value for "ambient" light
+int stopdist = 240; //value for stopping distance
+
+// Create Servo Objects as defined in the Servo.h files
+Servo L_Servo;  // Left Servo DC Motor Driver (Designed for RC cars)
+Servo R_Servo;  // Right Servo DC Motor Driver (Designed for RC cars)
+Servo A_Servo;  // Arm Servo DC Motor Driver 
+
+//**************************************************************
+//*****************  Setup  ************************************
+//**************************************************************
+void setup() {
+  // Set the pins that the transmitter will be connected to all to input
+  pinMode(12, INPUT); //I connected this to Chan1 of the Receiver
+  pinMode(11, INPUT); //I connected this to Chan2 of the Receiver
+  pinMode(10, INPUT); //I connected this to Chan3 of the Receiver
+  pinMode(9, INPUT); //I connected this to Chan4 of the Receiver
+  pinMode(8, INPUT); //I connected this to Chan5 of the Receiver
+  pinMode(7, INPUT); //I connected this to Chan6 of the Receiver
+  pinMode(13, OUTPUT); //Onboard LED to output for diagnostics
+  // Attach Speed controller that acts like a servo to the board
+  R_Servo.attach(2); //Pin 2
+  L_Servo.attach(3); //Pin 3
+  A_Servo.attach(4); //Pin 4
+  
+  //Flash the LED on and Off 10x before entering main loop
+  for (int i = 0; i < 10; i++) {
+    digitalWrite(13, HIGH);
+    delay(200);
+    digitalWrite(13, LOW);
+    delay(200);
+  }
+  //Flash the LED on and Off 10x End
+  Serial.begin(9600);
+}
+//************************  loop()  ****************************
+//**********************  Main Loop  ***************************
+//**************************************************************
+void loop()
+{
+  Ch1 = pulseIn(12, HIGH, 21000); // Capture pulse width on Channel 1 //left/right
+  Ch2 = pulseIn(11, HIGH, 21000); // Capture pulse width on Channel 2 //forward/reverse
+  Ch3 = pulseIn(10, HIGH, 21000);  // Capture pulse width on Channel 3
+  Ch4 = pulseIn(9, HIGH, 21000);  // Capture pulse width on Channel 4 //raise/lower arm
+  Ch5 = pulseIn(8, HIGH, 21000); // Capture pulse width on Channel 5
+  Ch6 = pulseIn(7, HIGH, 21000); // Capture pulse width on Channel 6
+
+  int L_sensor = analogRead(A0); // variable for left light sensor
+  int R_sensor = analogRead(A1); // variable for right light sensor 
+  int P_sensor = analogRead(A2); // variable for prox sensor
+  L_sensor = map(L_sensor, 0, 1000, 50, 800); // mapping values for L_sensor
+  R_sensor = map(R_sensor, 0, 1000, 200, 1000); // mapping values for R_sensor
+
+  ///////////Serial Print values for calibration////////////
+  //Serial.print(L_sensor);
+  //Serial.print(" ");
+  //Serial.print(R_sensor);
+  //Serial.print(" ");
+  //Serial.println(P_sensor);
+  //delay(100);
+  //
+//
+//  if(Ch_ > ____)
+//  {
+//    if(P_sensor > stopdist) // Stop
+//    {
+//      R_Servo.writeMicroseconds(1550);
+//      L_Servo.writeMicroseconds(1500);
+//      delay(2000);
+//      A_Servo.writeMicroseconds(____);
+//      delay(____);
+//      A_Servo.writeMicroseconds(____);
+//      return; 
+//    }  
+//    else if(L_sensor >= ambi && R_sensor >= ambi) // Spin
+//    {
+//      R_Servo.writeMicroseconds(1623);
+//      L_Servo.writeMicroseconds(1556);
+//      delay(10);
+//      return;
+//    }
+//    else if(L_sensor < ambi && R_sensor - L_sensor > 150) // Left
+//    {
+//      R_Servo.writeMicroseconds(1620);
+//      L_Servo.writeMicroseconds(1360);
+//      delay(10);
+//      return;
+//    }
+//    else if(R_sensor < ambi && L_sensor - R_sensor > 150) //Right
+//    {
+//      R_Servo.writeMicroseconds(1635);
+//      L_Servo.writeMicroseconds(1290);
+//      delay(10);
+//      return;
+//    }
+//    else if(L_sensor < ambi && R_sensor < ambi) // Straight
+//    {
+//      R_Servo.writeMicroseconds(1640);
+//      L_Servo.writeMicroseconds(1440);
+//      delay(10);
+//      return;
+//    }
+//  }
+//  else{
+//    DriveServosRC();
+//  }
+
+//  TestWheels();
+    DriveServosRC(); // Drive Motors under RC control
+//    PrintRC(); //Print Values for RC Mode Diagnostics
+
+}
+//********************** MixLimits() ***************************
+//*******  Make sure values never exceed ranges  ***************
+//******  For most all servos and like controlers  *************
+//****   control must fall between 1000uS and 2000uS  **********
+//**************************************************************
+void SetLimits() {
+  if (Lwheel < 1000) {// Can be set to a value you don't wish to exceed
+    Lwheel = 1000;    // to adjust maximums for your own robot
+  }
+  if (Lwheel > 2000) {// Can be set to a value you don't wish to exceed
+    Lwheel = 2000;    // to adjust maximums for your own robot
+  }
+  if (Rwheel < 1000) {// Can be set to a value you don't wish to exceed
+    Rwheel = 1000;    // to adjust maximums for your own robot
+  }
+  if (Rwheel > 2000) {// Can be set to a value you don't wish to exceed
+    Rwheel = 2000;    // to adjust maximums for your own robot
+  }
+  pulseMotors();
+}
+//*******************   pulseMotors  ***************************
+//pulses either mapped or direct signals generated from Mixlimits
+//**************************************************************
+void pulseMotors() {
+  //un-comment the next two line to drive the wheels directly with the MaxLimits Set
+//  R_Servo.writeMicroseconds(Rwheel);
+//  L_Servo.writeMicroseconds(Lwheel);
+
+  //un-comment the next two to map a control range.
+  //*** Take the standard range of 1000 to 2000 and frame it to your own minimum and maximum
+  //*** for each wheel.
+  Rwheel = map(Rwheel, 1000, 2000, 1750, 1250);
+  Lwheel = map(Lwheel, 1000, 2000, 1750, 1250);
+  Arm = map(Arm, 1000, 2000, 1300, 1700);
+  R_Servo.writeMicroseconds(Rwheel);
+  L_Servo.writeMicroseconds(Lwheel);
+  A_Servo.writeMicroseconds(Arm);
+ 
+  // un-comment this line do display the value being sent to the motors
+//  PrintWheelCalcs(); //REMEMBER: printing values slows reaction times
+
+}
+//*****************  PrintWheelCalcs()  ************************
+//*******  Prints calculated wheel output values  **************
+//**************************************************************
+void PrintWheelCalcs() {
+  Serial.print("Right Wheel = ");
+  Serial.println(Rwheel);
+  Serial.print("Left Wheel = ");
+  Serial.println(Lwheel);
+  Serial.println(" ");
+}
+//********************  TestWheels()  **************************
+//*  Direct call to Servos to test wheel speed and direction  **
+//**************************************************************
+void TestWheels() {
+  for (int i = 1000; i <= 1500; i += 10) {
+    R_Servo.writeMicroseconds(i); // 1000-2000, 1500 should be stop
+    L_Servo.writeMicroseconds(i); // 1000-2000, 1500 should be stop
+    Serial.println(" Pulse width = " + (String)i);
+    delay(200);
+  }
+
+  digitalWrite(13, HIGH);
+  for (int i = 5; i >= 0; i--) {
+    Serial.println("Holding at 1500 for  " + (String)i + " more seconds.");
+    delay(1000);
+  }
+  digitalWrite(13, LOW);
+
+  for (int i = 1500; i <= 2000; i += 10) {
+    R_Servo.writeMicroseconds(i); // 1000-2000, 1500 should be stop
+    L_Servo.writeMicroseconds(i); // 1000-2000, 1500 should be stop
+    Serial.println(" Pulse width = " + (String)i);
+    delay(200);
+  }
+  R_Servo.writeMicroseconds(1500); // 1000-2000, 1500 should be stop
+  L_Servo.writeMicroseconds(1500); // 1000-2000, 1500 should be stop
+
+  while (true) {
+    Serial.println(" Holding Pulse width at 1500 ");
+    digitalWrite(13, HIGH);
+    delay(1000);
+    digitalWrite(13, LOW);
+    delay(100);
+  }
+}
+//*******************  DriveServosRC()  ************************
+//******  Use the value collected from Ch1 and Ch2  ************
+//******  on a single stick to relatively calculate  ***********
+//****  speed and direction of two servo driven wheels *********
+//**************************************************************
+void DriveServosRC()
+{
+  if (Ch2 <= 1500) {
+    Lwheel = Ch1 + Ch2 - 1500;
+    Rwheel = Ch1 - Ch2 + 1500;
+    Arm = Ch4;
+    SetLimits();
+  }
+  if (Ch2 > 1500) {
+    int Ch1_mod = map(Ch1, 1000, 2000, 2000, 1000); // Invert the Ch1 axis to keep the math similar
+    Lwheel = Ch1_mod + Ch2 - 1500;
+    Rwheel = Ch1_mod - Ch2 + 1500;
+    Arm = Ch4;
+    SetLimits();
+  }
+}
+//**********************  PrintRC()  ***************************
+//***  Simply print the collected RC values for diagnostics  ***
+//**************************************************************
+void PrintRC()
+{ // print out the values you read in:
+  Serial.println(" RC Control Mode ");
+  Serial.print("Value Ch1 = ");
+  Serial.println(Ch1);
+  Serial.print("Value Ch2 = ");
+  Serial.println(Ch2);
+  Serial.print("Value Ch3 = ");
+  Serial.println(Ch3);
+  Serial.print("Value Ch4 = ");
+  Serial.println(Ch4);
+  Serial.print("Control = ");
+  Serial.println(Ch5);
+  Serial.print("Value Ch6 = ");
+  Serial.println(Ch6);
+  Serial.println(" ");
+  delay(1000);
+}
