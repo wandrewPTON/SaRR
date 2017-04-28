@@ -12,8 +12,9 @@ int CalcHold;        //Variable to temp hold calculations for steering stick cor
 int Rwheel;
 int Lwheel;
 int Arm;
-int ambi = 600; //value for "ambient" light
-int stopdist = 240; //value for stopping distance
+int ambi = 550; //value for "ambient" light
+int stopdist = 250; //value for stopping distance
+int chute_turn = 225;
 
 // Create Servo Objects as defined in the Servo.h files
 Servo L_Servo;  // Left Servo DC Motor Driver (Designed for RC cars)
@@ -59,68 +60,98 @@ void loop()
   Ch5 = pulseIn(8, HIGH, 21000); // Capture pulse width on Channel 5
   Ch6 = pulseIn(7, HIGH, 21000); // Capture pulse width on Channel 6
 
-  int L_sensor = analogRead(A0); // variable for left light sensor
-  int R_sensor = analogRead(A1); // variable for right light sensor 
-  int P_sensor = analogRead(A2); // variable for prox sensor
-  L_sensor = map(L_sensor, 0, 1000, 50, 800); // mapping values for L_sensor
-  R_sensor = map(R_sensor, 0, 1000, 200, 1000); // mapping values for R_sensor
+  int R_sensor = analogRead(A0); // variable for left light sensor
+  int L_sensor = analogRead(A1); // variable for right light sensor 
+  int P_sensor_M = analogRead(A2); // variable for middle prox sensor used in light tracking
+  int P_sensor_L = analogRead(A3); // variable for left prox sensor used in chute traversal
+  int P_sensor_R = analogRead(A4); // variable for right prox sensor used in chute traversal
+  L_sensor = map(L_sensor, 0, 1000, 125, 1000); // mapping values for L_sensor
+  R_sensor = map(R_sensor, 0, 1000, 0, 700); // mapping values for R_sensor
 
   ///////////Serial Print values for calibration////////////
-  //Serial.print(L_sensor);
-  //Serial.print(" ");
-  //Serial.print(R_sensor);
-  //Serial.print(" ");
-  //Serial.println(P_sensor);
-  //delay(100);
-  //
-//
-//  if(Ch_ > ____)
+//  Serial.print(Ch1);
+//  Serial.print(" ");
+//  Serial.println(Ch4);
+//  Serial.print(" ");
+//  Serial.println(P_sensor_L);
+//  delay(100);
+
+   R_Servo.writeMicroseconds(1495); // Stop is 1470
+   L_Servo.writeMicroseconds(1555); // Stop is 1550
+
+//  if(Ch5 > 1900)
 //  {
-//    if(P_sensor > stopdist) // Stop
+//    if(P_sensor_M > stopdist) // Stop
 //    {
 //      R_Servo.writeMicroseconds(1550);
 //      L_Servo.writeMicroseconds(1500);
 //      delay(2000);
-//      A_Servo.writeMicroseconds(____);
-//      delay(____);
-//      A_Servo.writeMicroseconds(____);
+//      A_Servo.writeMicroseconds(1700);
+//      delay(275);
+//      A_Servo.writeMicroseconds(1500);
+//      delay(1000000000000);
 //      return; 
 //    }  
-//    else if(L_sensor >= ambi && R_sensor >= ambi) // Spin
+//    else if(L_sensor >= ambi && R_sensor >= ambi) // Spin good
 //    {
-//      R_Servo.writeMicroseconds(1623);
-//      L_Servo.writeMicroseconds(1556);
+//      R_Servo.writeMicroseconds(1650);
+//      L_Servo.writeMicroseconds(1600);
 //      delay(10);
 //      return;
 //    }
-//    else if(L_sensor < ambi && R_sensor - L_sensor > 150) // Left
+//    else if(L_sensor < ambi && R_sensor - L_sensor > 150) // Left good
 //    {
-//      R_Servo.writeMicroseconds(1620);
-//      L_Servo.writeMicroseconds(1360);
+//      R_Servo.writeMicroseconds(1535);
+//      L_Servo.writeMicroseconds(1560);
 //      delay(10);
 //      return;
 //    }
-//    else if(R_sensor < ambi && L_sensor - R_sensor > 150) //Right
+//    else if(R_sensor < ambi && L_sensor - R_sensor > 150) //Right good
 //    {
-//      R_Servo.writeMicroseconds(1635);
-//      L_Servo.writeMicroseconds(1290);
+//      R_Servo.writeMicroseconds(1320);
+//      L_Servo.writeMicroseconds(1550);
 //      delay(10);
 //      return;
 //    }
-//    else if(L_sensor < ambi && R_sensor < ambi) // Straight
+//    else if(L_sensor < ambi && R_sensor < ambi) // Straight good
 //    {
-//      R_Servo.writeMicroseconds(1640);
-//      L_Servo.writeMicroseconds(1440);
+//      R_Servo.writeMicroseconds(1515);
+//      L_Servo.writeMicroseconds(1540);
 //      delay(10);
 //      return;
 //    }
 //  }
-//  else{
+//  else if(Ch6 > 1900)
+//  {
+//    if(P_sensor_L > P_sensor_R && P_sensor_L > chute_turn) // Turn right
+//    {
+//      R_Servo.writeMicroseconds(1320);
+//      L_Servo.writeMicroseconds(1550);
+//      delay(10);
+//      return;
+//    }
+//    else if(P_sensor_R > P_sensor_L && P_sensor_R > chute_turn) // Turn left
+//    {
+//      R_Servo.writeMicroseconds(1470);
+//      L_Servo.writeMicroseconds(1690);
+//      delay(10);
+//      return;
+//    }
+//    else if(P_sensor_R < chute_turn && P_sensor_L < chute_turn) // Go straight
+//    {
+//      R_Servo.writeMicroseconds(1503);
+//      L_Servo.writeMicroseconds(1590);
+//      delay(10);
+//      return;
+//    }    
+//  }
+//  else
+//  {
 //    DriveServosRC();
 //  }
 
 //  TestWheels();
-    DriveServosRC(); // Drive Motors under RC control
+//    DriveServosRC(); // Drive Motors under RC control
 //    PrintRC(); //Print Values for RC Mode Diagnostics
 
 }
@@ -155,9 +186,9 @@ void pulseMotors() {
   //un-comment the next two to map a control range.
   //*** Take the standard range of 1000 to 2000 and frame it to your own minimum and maximum
   //*** for each wheel.
-  Rwheel = map(Rwheel, 1000, 2000, 1750, 1250);
-  Lwheel = map(Lwheel, 1000, 2000, 1750, 1250);
-  Arm = map(Arm, 1000, 2000, 1300, 1700);
+  Rwheel = map(Rwheel, 1000, 2000, 2000, 1175);
+  Lwheel = map(Lwheel, 1000, 2000, 2000, 1000);
+  Arm = map(Arm, 1000, 2000, 1000, 2000);
   R_Servo.writeMicroseconds(Rwheel);
   L_Servo.writeMicroseconds(Lwheel);
   A_Servo.writeMicroseconds(Arm);
@@ -225,7 +256,7 @@ void DriveServosRC()
     SetLimits();
   }
   if (Ch2 > 1500) {
-    int Ch1_mod = map(Ch1, 1000, 2000, 2000, 1000); // Invert the Ch1 axis to keep the math similar
+    int Ch1_mod = map(Ch1, 1000, 2000, 1000, 2000); // Invert the Ch1 axis to keep the math similar
     Lwheel = Ch1_mod + Ch2 - 1500;
     Rwheel = Ch1_mod - Ch2 + 1500;
     Arm = Ch4;
